@@ -50,6 +50,7 @@ end;
 procedure TfrmPersons.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
   Sqlite3Dataset1.Close;
+  Sqlite3Dataset1.Free;
 end;
 
 end.

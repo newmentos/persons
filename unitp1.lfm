@@ -1,7 +1,7 @@
 object frmPersons: TfrmPersons
-  Left = 175
+  Left = 364
   Height = 462
-  Top = 183
+  Top = 238
   Width = 695
   Caption = 'Персоны'
   ClientHeight = 462
