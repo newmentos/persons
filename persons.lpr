@@ -3,12 +3,12 @@ program Persons;
 {$mode objfpc}{$H+}
 
 uses
+  cmem,
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, sqlite3laz, unitp1
-  { you can add units after this };
+  Forms, unitp1;
 
 {$R *.res}
 

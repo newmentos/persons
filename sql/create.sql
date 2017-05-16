@@ -4,15 +4,14 @@ CREATE TABLE persons (
     middlename VARCHAR (30) NOT NULL,
     secondname VARCHAR (50) NOT NULL,
     datebirth  DATE         NOT NULL,
-    dateappend DATETIME     DEFAULT (datetime(today() ) ),
+    dateappend DATETIME DEFAULT (datetime('now','localtime')),
     prim       TEXT
 );
 CREATE TABLE photo (
     idphoto    INTEGER PRIMARY KEY AUTOINCREMENT,
     photo      BLOB    NOT NULL,
     datephoto  DATE,
-    dateappend         DEFAULT (datetime(today() ) ) 
-                       NOT NULL,
+    dateappend DATETIME NOT NULL DEFAULT (datetime('now','localtime')),
     idperson           REFERENCES persons (id) 
 );
 

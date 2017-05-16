@@ -1,7 +1,7 @@
 object frmPersons: TfrmPersons
-  Left = 364
+  Left = 346
   Height = 462
-  Top = 238
+  Top = 245
   Width = 695
   Caption = 'Персоны'
   ClientHeight = 462
@@ -14,7 +14,7 @@ object frmPersons: TfrmPersons
     Left = 8
     Height = 328
     Top = 8
-    Width = 680
+    Width = 368
     Color = clWindow
     Columns = <>
     DataSource = DataSource1
@@ -30,13 +30,19 @@ object frmPersons: TfrmPersons
     )
     TabOrder = 1
   end
+  object Image1: TImage
+    Left = 384
+    Height = 328
+    Top = 8
+    Width = 306
+  end
   object Sqlite3Dataset1: TSqlite3Dataset
-    left = 144
-    top = 106
+    left = 185
+    top = 69
   end
   object DataSource1: TDataSource
     DataSet = Sqlite3Dataset1
-    left = 336
-    top = 120
+    left = 180
+    top = 209
   end
 end
