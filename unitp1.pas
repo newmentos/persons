@@ -5,28 +5,41 @@ unit unitp1;
 interface
 
 uses
-  Classes, SysUtils, DB, sqlite3conn, sqldb, Sqlite3DS, FileUtil, Forms,
-  Controls, Graphics, Dialogs, DBGrids, StdCtrls, ExtCtrls, dynlibs, sqlite3dyn;
+  Classes, SysUtils, FileUtil, Forms, LCLType,
+  Controls, Graphics, Dialogs, StdCtrls, ExtCtrls, Menus, SQLiteTable3;
 
 const
-{$IFDEF WINDOWS}
-  Sqlite3Lib = 'libsqlcipher-0.dll';
-{$else}
-  Sqlite3Lib = 'libsqlcipher.' + sharedsuffix;
-{$endif}
+{$IF Defined(MSWINDOWS)}
+  SQLiteDLL = 'libsqlcipher.dll';
+{$ELSEIF Defined(DARWIN)}
+  SQLiteDLL = 'libsqlcipher.dylib';
+  {$linklib libsqlite3}
+{$ELSEIF Defined(UNIX)}
+  SQLiteDLL = 'libsqlcipher.so';
+{$IFEND}
 
 type
 
   { TfrmPersons }
 
   TfrmPersons = class(TForm)
-    DataSource1: TDataSource;
-    DBGrid1: TDBGrid;
     Image1: TImage;
     logMemo1: TMemo;
-    Sqlite3Dataset1: TSqlite3Dataset;
-    procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
+    MainMenu1: TMainMenu;
+    MenuItemAbout: TMenuItem;
+    MenuItemExit: TMenuItem;
+    MenuItemChangePassDb: TMenuItem;
+    MenuItemDelDb: TMenuItem;
+    MenuItemOpenDb: TMenuItem;
+    MenuItemFile: TMenuItem;
+    MenuItemCreateDb: TMenuItem;
+    procedure FormClose(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure MenuItemChangePassDbClick(Sender: TObject);
+    procedure MenuItemCreateDbClick(Sender: TObject);
+    procedure MenuItemDelDbClick(Sender: TObject);
+    procedure MenuItemExitClick(Sender: TObject);
+    procedure MenuItemOpenDbClick(Sender: TObject);
   private
     { private declarations }
   public
@@ -37,6 +50,9 @@ var
   frmPersons: TfrmPersons;
   pass: string;
   f1: TFileStream;
+  db: TSQLiteDatabase;
+  sql: string;
+  dbfile: string;
 
 implementation
 
@@ -45,38 +61,48 @@ implementation
 { TfrmPersons }
 
 procedure TfrmPersons.FormCreate(Sender: TObject);
-var
-  id: int64;
 begin
-  {$IFDEF WINDOWS}
-  sqlite3dyn.SQLiteDefaultLibrary := GetCurrentDir() + PathDelim + 'libsqlcipher-0.dll';
-  {$else}
-  // sqlite3dyn.SQLiteDefaultLibrary := GetCurrentDir() + PathDelim + 'libsqlite3.so';
-  sqlite3dyn.SQLiteDefaultLibrary :=
-    GetCurrentDir() + PathDelim + 'libsqlcipher.' + sharedsuffix;
-  {$endif}
-  sqlite3dyn.InitializeSqlite();
   logMemo1.Clear;
-  logMemo1.Append(GetCurrentDir() + PathDelim + 'libsqlcipher.' + sharedsuffix);
-  pass := PasswordBox('Пароль к базе данных', 'Введите пароль:');
-  Sqlite3Dataset1.FileName := GetCurrentDir() + PathDelim + 'persons.db';
-  if not FileExists(Sqlite3Dataset1.FileName) then
-    ShowMessage('File not found');
+  db := nil;
+  dbfile := GetCurrentDir() + PathDelim + 'persons.db';
+  // Есть файл базы данных ?
+  if not FileExists(dbfile) then
+    if Application.MessageBox('Файл базы данных не найден. Создать пустую базу данных?',
+      'Ошибка', MB_ICONQUESTION + MB_YESNO) = idYes then
+      MenuItemCreateDbClick(self)
+    else
+      Exit();
+end;
 
-  Sqlite3Dataset1.ExecSQL('PRAGMA key = "' + Trim(pass) + '";');
-  logMemo1.Append('PRAGMA key="' + Trim(pass) + '";');
+procedure TfrmPersons.MenuItemChangePassDbClick(Sender: TObject);
+var
+  pass1, pass2: string;
+begin
+  pass1 := PasswordBox('Пароль к базе данных', 'Введите новый пароль:');
+  pass2 := PasswordBox('Пароль к базе данных', 'Введите новый пароль еще раз:');
+  if pass1 = pass2 then
+    DB.ModifyDbPassword(PAnsiChar(pass1));
+end;
 
-  if not Sqlite3Dataset1.TableExists('persons') then
-    Sqlite3Dataset1.ExecSQL(
-      'CREATE TABLE persons (id INTEGER PRIMARY KEY AUTOINCREMENT,firstname VARCHAR(30) NOT NULL, middlename VARCHAR (30) NOT NULL, secondname VARCHAR (50) NOT NULL, datebirth  DATE NOT NULL, dateappend DATETIME, prim TEXT);');
-  if not Sqlite3Dataset1.TableExists('photo') then
-    Sqlite3Dataset1.ExecSQL(
-      'CREATE TABLE photo (idphoto INTEGER PRIMARY KEY AUTOINCREMENT, photo BLOB NOT NULL, datephoto  DATE, dateappend DATETIME NOT NULL, idperson REFERENCES persons (id));');
-
-  Sqlite3Dataset1.TableName := 'persons';
-  Sqlite3Dataset1.Active := True;
-  {
-  id := Sqlite3Dataset1.LastInsertRowId + 1;
+procedure TfrmPersons.MenuItemCreateDbClick(Sender: TObject);
+begin
+  // Удаляем файл если он есть
+  if FileExists(dbfile) then
+    DeleteFile(dbfile);
+  // Справшиваем пароль
+  // pass := PasswordBox('Пароль к базе данных', 'Введите пароль:');
+  pass := '12345';
+  // Подключение к базе данных, если файл базы данных не существует, будет создана автоматически
+  db := TSQLiteDatabase.Create(dbfile, PAnsiChar(pass));
+  DB.ExecSQL(
+    'CREATE TABLE USER(ID integer PRIMARY KEY AUTOINCREMENT NOT NULL,USERNAME VARCHAR(50),HOMEPAGE VARCHAR(255))');
+  DB.ExecSQL('DROP TABLE IF EXISTS persons;');
+  DB.ExecSQL(
+    'CREATE TABLE persons (id INTEGER PRIMARY KEY AUTOINCREMENT,firstname VARCHAR(30) NOT NULL, middlename VARCHAR (30) NOT NULL, secondname VARCHAR (50) NOT NULL, datebirth  DATE NOT NULL, dateappend DATETIME, prim TEXT);');
+  DB.ExecSQL('DROP TABLE IF EXISTS photo;');
+  DB.ExecSQL(
+    'CREATE TABLE photo (idphoto INTEGER PRIMARY KEY AUTOINCREMENT, photo BLOB NOT NULL, datephoto  DATE, dateappend DATETIME NOT NULL, idperson REFERENCES persons (id));');
+{
   begin
     f1 := TFileStream.Create(GetCurrentDir() + PathDelim + '74a4eb79.jpg', fmOpenRead);
     Sqlite3Dataset1.UpdateBlob('UPDATE photo SET photo = ? WHERE idpersons = ' +
@@ -97,10 +123,31 @@ begin
   }
 end;
 
-procedure TfrmPersons.FormClose(Sender: TObject; var CloseAction: TCloseAction);
+procedure TfrmPersons.MenuItemDelDbClick(Sender: TObject);
 begin
-  Sqlite3Dataset1.Close;
-  Sqlite3Dataset1.Free;
+  DB.Free;
+  DeleteFile(dbfile);
+end;
+
+
+procedure TfrmPersons.MenuItemExitClick(Sender: TObject);
+begin
+  Close;
+end;
+
+procedure TfrmPersons.MenuItemOpenDbClick(Sender: TObject);
+begin
+  // pass := PasswordBox('Пароль к базе данных', 'Введите пароль:');
+  pass := '12345';
+  // Подключение к базе данных, если файл базы данных не существует, будет создана автоматически
+  db := TSQLiteDatabase.Create(dbfile, PAnsiChar(pass));
+end;
+
+procedure TfrmPersons.FormClose(Sender: TObject);
+begin
+  DB.Free;
+  // Удаляем файл БД
+  DeleteFile(dbfile);
 end;
 
 end.

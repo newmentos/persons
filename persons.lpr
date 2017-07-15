@@ -8,7 +8,7 @@ uses
   cthreads,
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, unitp1;
+  Forms, unitp1, SQLite3, SQLiteTable3;
 
 {$R *.res}
 
