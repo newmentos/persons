@@ -7,6 +7,7 @@ object fMain: TfMain
   Caption = 'БД Лицо'
   ClientHeight = 615
   ClientWidth = 805
+  Menu = MainMenu1
   OnClose = FormClose
   OnCreate = FormCreate
   Position = poScreenCenter
@@ -102,7 +103,6 @@ object fMain: TfMain
     BiDiMode = bdRightToLeft
     Panels = <    
       item
-        Alignment = taRightJustify
         Width = 80
       end    
       item
@@ -169,5 +169,22 @@ object fMain: TfMain
     OnTimer = Timer1Timer
     left = 378
     top = 200
+  end
+  object MainMenu1: TMainMenu
+    left = 33
+    top = 72
+    object miDB: TMenuItem
+      Caption = 'База данных'
+      object miChangePass: TMenuItem
+        Caption = 'Сменить пароль'
+      end
+      object miExit: TMenuItem
+        Caption = 'Выход'
+        OnClick = miExitClick
+      end
+    end
+    object miAbout: TMenuItem
+      Caption = 'О программе'
+    end
   end
 end

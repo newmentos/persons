@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, sqldblib, sqldb, DB, sqlite3conn, FileUtil, Forms,
   Controls, Graphics, Dialogs, DBGrids, DBCtrls, ExtDlgs, StdCtrls, ExtCtrls,
-  ComCtrls;
+  ComCtrls, Menus;
 
 { TfMain }
 
@@ -21,6 +21,11 @@ type
     DBImage1: TDBImage;
     DBMemo1: TDBMemo;
     DBNavigator1: TDBNavigator;
+    MainMenu1: TMainMenu;
+    miDB: TMenuItem;
+    miAbout: TMenuItem;
+    miExit: TMenuItem;
+    miChangePass: TMenuItem;
     OpenPictureDialog1: TOpenPictureDialog;
     SavePictureDialog1: TSavePictureDialog;
     SQLDBLibraryLoader1: TSQLDBLibraryLoader;
@@ -33,6 +38,7 @@ type
     procedure btnSavePhotoClick(Sender: TObject);
     procedure FormClose(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure miExitClick(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
   private
     { private declarations }
@@ -80,12 +86,17 @@ begin
 
 end;
 
+procedure TfMain.miExitClick(Sender: TObject);
+begin
+  Close;
+end;
+
 procedure TfMain.Timer1Timer(Sender: TObject);
 begin
-  StatusBar1.Panels[0].Text := TimeToStr(now);
-  StatusBar1.Panels[1].Text := DateToStr(now);
-  StatusBar1.Panels[2].Text := 'Всего записей:'+IntToStr(SQLQuery1.RecordCount);
-
+  StatusBar1.Panels[0].Text := DateToStr(now);
+  StatusBar1.Panels[1].Text := TimeToStr(now);
+  StatusBar1.Panels[2].Text :=
+    'Всего записей:' + IntToStr(SQLQuery1.RecordCount);
 end;
 
 procedure TfMain.FormClose(Sender: TObject);
