@@ -1,0 +1,173 @@
+object fMain: TfMain
+  Left = 0
+  Height = 615
+  Top = 0
+  Width = 805
+  ActiveControl = DBGrid1
+  Caption = 'БД Лицо'
+  ClientHeight = 615
+  ClientWidth = 805
+  OnClose = FormClose
+  OnCreate = FormCreate
+  Position = poScreenCenter
+  Visible = False
+  object DBGrid1: TDBGrid
+    Left = 8
+    Height = 256
+    Top = 344
+    Width = 504
+    AutoAdvance = aaNone
+    Color = clWindow
+    Columns = <>
+    DataSource = DataSource1
+    DefaultRowHeight = 24
+    Options = [dgEditing, dgTitles, dgIndicator, dgColumnResize, dgColumnMove, dgColLines, dgRowLines, dgTabs, dgAlwaysShowSelection, dgConfirmDelete, dgCancelOnExit, dgAutoSizeColumns]
+    TabOrder = 0
+    TitleStyle = tsStandard
+    UseXORFeatures = True
+  end
+  object DBNavigator1: TDBNavigator
+    Left = 8
+    Height = 40
+    Top = 296
+    Width = 504
+    BevelOuter = bvNone
+    Caption = 'Кнопки'
+    ChildSizing.EnlargeHorizontal = crsScaleChilds
+    ChildSizing.EnlargeVertical = crsScaleChilds
+    ChildSizing.ShrinkHorizontal = crsScaleChilds
+    ChildSizing.ShrinkVertical = crsScaleChilds
+    ChildSizing.Layout = cclLeftToRightThenTopToBottom
+    ChildSizing.ControlsPerLine = 100
+    ClientHeight = 40
+    ClientWidth = 504
+    DataSource = DataSource1
+    Options = []
+    TabOrder = 1
+  end
+  object DBImage1: TDBImage
+    Left = 520
+    Height = 256
+    Top = 104
+    Width = 274
+    AutoSize = True
+    Center = True
+    DataField = 'photo'
+    DataSource = DataSource1
+    Proportional = True
+    QuickDraw = False
+    Stretch = True
+  end
+  object btnLoadPhoto: TButton
+    Left = 520
+    Height = 40
+    Top = 56
+    Width = 274
+    Caption = 'Загрузить фото'
+    OnClick = btnLoadPhotoClick
+    TabOrder = 2
+  end
+  object btnSavePhoto: TButton
+    Left = 520
+    Height = 40
+    Top = 368
+    Width = 274
+    Caption = 'Сохранить фото'
+    OnClick = btnSavePhotoClick
+    TabOrder = 3
+  end
+  object DBMemo1: TDBMemo
+    Left = 520
+    Height = 186
+    Top = 416
+    Width = 274
+    DataField = 'prim'
+    DataSource = DataSource1
+    TabOrder = 4
+  end
+  object btnImportData: TButton
+    Left = 520
+    Height = 40
+    Top = 8
+    Width = 274
+    Caption = 'Импорт списка'
+    OnClick = btnLoadPhotoClick
+    TabOrder = 5
+  end
+  object StatusBar1: TStatusBar
+    Left = 0
+    Height = 23
+    Top = 592
+    Width = 805
+    BiDiMode = bdRightToLeft
+    Panels = <    
+      item
+        Alignment = taRightJustify
+        Width = 80
+      end    
+      item
+        Width = 50
+      end    
+      item
+        Width = 50
+      end>
+    ParentBiDiMode = False
+    SimplePanel = False
+  end
+  object SQLDBLibraryLoader1: TSQLDBLibraryLoader
+    Enabled = False
+    left = 88
+    top = 408
+  end
+  object SQLite3Connection1: TSQLite3Connection
+    Connected = True
+    LoginPrompt = False
+    DatabaseName = 'database.db'
+    KeepConnection = False
+    Transaction = SQLTransaction1
+    CharSet = 'UTF8'
+    Options = []
+    left = 88
+    top = 504
+  end
+  object SQLQuery1: TSQLQuery
+    PacketRecords = -1
+    FieldDefs = <>
+    Database = SQLite3Connection1
+    Transaction = SQLTransaction1
+    SQL.Strings = (
+      'select * from "t1";'
+    )
+    Options = [sqoKeepOpenOnCommit, sqoAutoApplyUpdates, sqoAutoCommit, sqoCancelUpdatesOnRefresh, sqoRefreshUsingSelect]
+    Params = <>
+    left = 224
+    top = 504
+  end
+  object DataSource1: TDataSource
+    AutoEdit = False
+    DataSet = SQLQuery1
+    left = 368
+    top = 504
+  end
+  object SQLTransaction1: TSQLTransaction
+    Active = True
+    Action = caCommit
+    Database = SQLite3Connection1
+    Options = []
+    left = 224
+    top = 408
+  end
+  object OpenPictureDialog1: TOpenPictureDialog
+    left = 568
+    top = 216
+  end
+  object SavePictureDialog1: TSavePictureDialog
+    left = 720
+    top = 216
+  end
+  object Timer1: TTimer
+    OnTimer = Timer1Timer
+    left = 378
+    top = 200
+  end
+end
