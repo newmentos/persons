@@ -3,6 +3,7 @@
 ### Lazarus ###
 #ignore backup files
 backup/
+jpg/
 *.back
 *.bak
 *~

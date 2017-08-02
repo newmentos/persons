@@ -22,6 +22,14 @@ type
     DBMemo1: TDBMemo;
     DBNavigator1: TDBNavigator;
     MainMenu1: TMainMenu;
+    miImportData: TMenuItem;
+    miExportData: TMenuItem;
+    miLine: TMenuItem;
+    miData: TMenuItem;
+    miRecoveryFromBackupDb: TMenuItem;
+    miCreateBackupDb: TMenuItem;
+    miVacuumDb: TMenuItem;
+    miCreateDb: TMenuItem;
     miDB: TMenuItem;
     miAbout: TMenuItem;
     miExit: TMenuItem;
@@ -38,8 +46,13 @@ type
     procedure btnSavePhotoClick(Sender: TObject);
     procedure FormClose(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure miAboutClick(Sender: TObject);
+    procedure miCreateDbClick(Sender: TObject);
     procedure miExitClick(Sender: TObject);
+    procedure miVacuumDbClick(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
+    procedure CloseDb;
+    procedure InitDb;
   private
     { private declarations }
   public
@@ -48,24 +61,29 @@ type
 
 var
   fMain: TfMain;
+  databasefile: string;
 
 implementation
 
-{$R *.lfm}
-
-{ TfMain }
-
-procedure TfMain.FormCreate(Sender: TObject);
+procedure TfMain.CloseDb;
 begin
-  SQLDBLibraryLoader1.LibraryName :=
-    ExtractFilePath(Application.ExeName) + 'sqlite3.dll';
-  SQLDBLibraryLoader1.ConnectionType := 'SQLite3';
-  SQLDBLibraryLoader1.LoadLibrary;
-  SQLDBLibraryLoader1.Enabled := True;
+  SQLTransaction1.CloseDataSets;
+  SQLQuery1.Active := False;
+  SQLQuery1.Close;
+  SQLite3Connection1.CloseTransactions;
+  SQLTransaction1.Active := False;
+  SQLite3Connection1.Connected := False;
+  SQLite3Connection1.Close(True);
 
+  SQLTransaction1.Free;
+  SQLite3Connection1.Free;
+end;
+
+procedure TfMain.InitDb;
+begin
   // указываем путь к базе
-  SQLite3Connection1.DatabaseName :=
-    ExtractFilePath(Application.ExeName) + 'database.db';
+  databasefile := ExtractFilePath(Application.ExeName) + 'database.db';
+  SQLite3Connection1.DatabaseName := databasefile;
   // указываем рабочую кодировку
   SQLite3Connection1.CharSet := 'UTF8';
 
@@ -79,17 +97,68 @@ begin
   except   // если не удалось то выводим сообщение о ошибке
     ShowMessage('Ошибка подключения к базе!');
   end;
-
   SQLIte3Connection1.ExecuteDirect('PRAGMA key=' + QuotedStr('12345') + ';');
   SQLTransaction1.Active := True;
-  SQLQuery1.Open;
+end;
 
+{$R *.lfm}
+
+{ TfMain }
+
+procedure TfMain.FormCreate(Sender: TObject);
+begin
+  {$IF Defined(MSWINDOWS)}
+  SQLDBLibraryLoader1.LibraryName :=
+    ExtractFilePath(Application.ExeName) + 'sqlite3.dll';
+  {$ELSEIF Defined(UNIX)}
+  SQLDBLibraryLoader1.LibraryName :=
+    ExtractFilePath(Application.ExeName) + 'libwxsqlite3.so';
+  {$IFEND}
+  SQLDBLibraryLoader1.ConnectionType := 'SQLite3';
+  SQLDBLibraryLoader1.LoadLibrary;
+  SQLDBLibraryLoader1.Enabled := True;
+  InitDb;
+  SQLQuery1.Open;
+end;
+
+procedure TfMain.miAboutClick(Sender: TObject);
+begin
+  ShowMessage('Страница проекта' + #13 +
+    'https://github.com/newmentos/persons.git');
+end;
+
+procedure TfMain.miCreateDbClick(Sender: TObject);
+var
+  sqlcreate: string;
+begin
+  CloseDb;
+  if FileExists(databasefile) then
+    DeleteFile(databasefile);
+  sqlcreate := 'CREATE TABLE person (' +
+    'id         INTEGER      PRIMARY KEY AUTOINCREMENT UNIQUE NOT NULL,' +
+    'family     VARCHAR (50),                                          ' +
+    'name       VARCHAR (50),                                          ' +
+    'middlename VARCHAR (50),                                          ' +
+    'dbirth     DATE,                                                  ' +
+    'photo      BLOB,                                                  ' +
+    'dateappend DATETIME DEFAULT (datetime("now","localtime")),        ' +
+    'prim       TEXT);';
+  SQLIte3Connection1.ExecuteDirect(sqlcreate);
+  InitDb;
 end;
 
 procedure TfMain.miExitClick(Sender: TObject);
 begin
   Close;
 end;
+
+procedure TfMain.miVacuumDbClick(Sender: TObject);
+begin
+  CloseDb;
+  SQLIte3Connection1.ExecuteDirect('VACUUM');
+  InitDb;
+end;
+
 
 procedure TfMain.Timer1Timer(Sender: TObject);
 begin
@@ -101,17 +170,7 @@ end;
 
 procedure TfMain.FormClose(Sender: TObject);
 begin
-  SQLTransaction1.CloseDataSets;
-  SQLQuery1.Active := False;
-  SQLQuery1.Close;
-  SQLite3Connection1.CloseTransactions;
-  SQLTransaction1.Active := False;
-  SQLite3Connection1.Connected := False;
-  SQLite3Connection1.Close(True);
-
-  SQLTransaction1.Free;
-  SQLite3Connection1.Free;
-
+  CloseDb;
   SQLDBLibraryLoader1.UnloadLibrary;
   SQLDBLibraryLoader1.Enabled := False;
   SQLDBLibraryLoader1.Free;

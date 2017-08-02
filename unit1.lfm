@@ -171,20 +171,47 @@ object fMain: TfMain
     top = 200
   end
   object MainMenu1: TMainMenu
-    left = 33
-    top = 72
+    left = 8
+    top = 8
     object miDB: TMenuItem
       Caption = 'База данных'
       object miChangePass: TMenuItem
         Caption = 'Сменить пароль'
+      end
+      object miCreateDb: TMenuItem
+        Caption = 'Создать новую'
+        OnClick = miCreateDbClick
+      end
+      object miVacuumDb: TMenuItem
+        Caption = 'Сжать'
+        OnClick = miVacuumDbClick
+      end
+      object miCreateBackupDb: TMenuItem
+        Caption = 'Создать резервную копию'
+      end
+      object miRecoveryFromBackupDb: TMenuItem
+        Caption = 'Восстановить из резервной копии'
+      end
+      object miLine: TMenuItem
+        Caption = '-'
       end
       object miExit: TMenuItem
         Caption = 'Выход'
         OnClick = miExitClick
       end
     end
+    object miData: TMenuItem
+      Caption = 'Данные'
+      object miImportData: TMenuItem
+        Caption = 'Импорт'
+      end
+      object miExportData: TMenuItem
+        Caption = 'Экспорт'
+      end
+    end
     object miAbout: TMenuItem
       Caption = 'О программе'
+      OnClick = miAboutClick
     end
   end
 end
