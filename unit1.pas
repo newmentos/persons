@@ -13,6 +13,7 @@ uses
 
 type
   TfMain = class(TForm)
+    btnExportData: TButton;
     btnLoadPhoto: TButton;
     btnImportData: TButton;
     btnSavePhoto: TButton;
@@ -34,7 +35,9 @@ type
     miAbout: TMenuItem;
     miExit: TMenuItem;
     miChangePass: TMenuItem;
+    OpenDialog1: TOpenDialog;
     OpenPictureDialog1: TOpenPictureDialog;
+    SaveDialog1: TSaveDialog;
     SavePictureDialog1: TSavePictureDialog;
     SQLDBLibraryLoader1: TSQLDBLibraryLoader;
     SQLite3Connection1: TSQLite3Connection;
@@ -42,6 +45,7 @@ type
     SQLTransaction1: TSQLTransaction;
     StatusBar1: TStatusBar;
     Timer1: TTimer;
+    procedure btnImportDataClick(Sender: TObject);
     procedure btnLoadPhotoClick(Sender: TObject);
     procedure btnSavePhotoClick(Sender: TObject);
     procedure FormClose(Sender: TObject);
@@ -108,9 +112,7 @@ begin
   SQLDBLibraryLoader1.ConnectionType := 'SQLite3';
   SQLDBLibraryLoader1.LoadLibrary;
   SQLDBLibraryLoader1.Enabled := True;
-
   SQLQuery1.SQL.Text := 'select * from "person"';
-
   InitDb;
 end;
 
@@ -151,7 +153,6 @@ begin
   SQLIte3Connection1.ExecuteDirect('End Transaction');
   SQLIte3Connection1.ExecuteDirect('VACUUM');
   SQLIte3Connection1.ExecuteDirect('Begin Transaction');
-//  SQLTransaction1.Active := True;
   InitDb;
 end;
 
@@ -207,6 +208,24 @@ begin
       end;
     finally
       f1.Free;
+    end;
+  end;
+end;
+
+procedure TfMain.btnImportDataClick(Sender: TObject);
+var
+  xlsfile:string;
+begin
+  OpenDialog1.Title := 'Открыть файл с данными';
+  OpenDialog1.InitialDir := GetCurrentDir;
+  OpenDialog1.Filter := 'Excel file|*.xls';
+  OpenDialog1.DefaultExt := 'xls';
+  if SQLQuery1.RecordCount>0 then
+  begin
+    if OpenDialog1.Execute then
+    begin
+      xlsfile := OpenDialog1.Filename;
+      ShowMessage('Выбран файл '+xlsfile);
     end;
   end;
 end;

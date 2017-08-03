@@ -1,21 +1,20 @@
 object fMain: TfMain
   Left = 0
-  Height = 615
+  Height = 679
   Top = 0
   Width = 805
   ActiveControl = DBGrid1
   Caption = 'БД Лицо'
-  ClientHeight = 615
+  ClientHeight = 679
   ClientWidth = 805
   Menu = MainMenu1
   OnClose = FormClose
   OnCreate = FormCreate
   Position = poScreenCenter
-  LCLVersion = '1.7'
   Visible = False
   object DBGrid1: TDBGrid
     Left = 8
-    Height = 256
+    Height = 304
     Top = 344
     Width = 504
     AutoAdvance = aaNone
@@ -50,7 +49,7 @@ object fMain: TfMain
   object DBImage1: TDBImage
     Left = 520
     Height = 256
-    Top = 56
+    Top = 104
     Width = 274
     AutoSize = True
     Center = True
@@ -63,7 +62,7 @@ object fMain: TfMain
   object btnLoadPhoto: TButton
     Left = 520
     Height = 40
-    Top = 320
+    Top = 368
     Width = 274
     Caption = 'Загрузить фото'
     OnClick = btnLoadPhotoClick
@@ -72,7 +71,7 @@ object fMain: TfMain
   object btnSavePhoto: TButton
     Left = 520
     Height = 40
-    Top = 368
+    Top = 416
     Width = 274
     Caption = 'Сохранить фото'
     OnClick = btnSavePhotoClick
@@ -81,7 +80,7 @@ object fMain: TfMain
   object DBMemo1: TDBMemo
     Left = 520
     Height = 186
-    Top = 416
+    Top = 464
     Width = 274
     DataField = 'prim'
     DataSource = DataSource1
@@ -93,13 +92,13 @@ object fMain: TfMain
     Top = 8
     Width = 274
     Caption = 'Импорт списка'
-    OnClick = btnLoadPhotoClick
+    OnClick = btnImportDataClick
     TabOrder = 5
   end
   object StatusBar1: TStatusBar
     Left = 0
     Height = 23
-    Top = 572
+    Top = 656
     Width = 805
     BiDiMode = bdRightToLeft
     Panels = <    
@@ -114,6 +113,14 @@ object fMain: TfMain
       end>
     ParentBiDiMode = False
     SimplePanel = False
+  end
+  object btnExportData: TButton
+    Left = 520
+    Height = 40
+    Top = 56
+    Width = 274
+    Caption = 'Экспорт списка'
+    TabOrder = 7
   end
   object SQLDBLibraryLoader1: TSQLDBLibraryLoader
     Enabled = False
@@ -214,5 +221,13 @@ object fMain: TfMain
       Caption = 'О программе'
       OnClick = miAboutClick
     end
+  end
+  object OpenDialog1: TOpenDialog
+    left = 568
+    top = 8
+  end
+  object SaveDialog1: TSaveDialog
+    left = 568
+    top = 64
   end
 end
