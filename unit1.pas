@@ -72,11 +72,6 @@ begin
   SQLQuery1.Close;
   SQLite3Connection1.CloseTransactions;
   SQLTransaction1.Active := False;
-  SQLite3Connection1.Connected := False;
-  SQLite3Connection1.Close(True);
-
-  SQLTransaction1.Free;
-  SQLite3Connection1.Free;
 end;
 
 procedure TfMain.InitDb;
@@ -86,10 +81,6 @@ begin
   SQLite3Connection1.DatabaseName := databasefile;
   // указываем рабочую кодировку
   SQLite3Connection1.CharSet := 'UTF8';
-
-  SQLQuery1.Close;
-  SQLQuery1.SQL.Text := 'select * from "person"';
-
   try  // пробуем подключится к базе
     SQLIte3Connection1.Open;
     SQLTransaction1.Active := True;
@@ -98,7 +89,7 @@ begin
     ShowMessage('Ошибка подключения к базе!');
   end;
   SQLIte3Connection1.ExecuteDirect('PRAGMA key=' + QuotedStr('12345') + ';');
-  SQLTransaction1.Active := True;
+  SQLQuery1.Open;
 end;
 
 {$R *.lfm}
@@ -117,13 +108,15 @@ begin
   SQLDBLibraryLoader1.ConnectionType := 'SQLite3';
   SQLDBLibraryLoader1.LoadLibrary;
   SQLDBLibraryLoader1.Enabled := True;
+
+  SQLQuery1.SQL.Text := 'select * from "person"';
+
   InitDb;
-  SQLQuery1.Open;
 end;
 
 procedure TfMain.miAboutClick(Sender: TObject);
 begin
-  ShowMessage('Страница проекта' + #13 +
+  ShowMessage('Страница проекта' + #13#10 +
     'https://github.com/newmentos/persons.git');
 end;
 
@@ -155,7 +148,10 @@ end;
 procedure TfMain.miVacuumDbClick(Sender: TObject);
 begin
   CloseDb;
+  SQLIte3Connection1.ExecuteDirect('End Transaction');
   SQLIte3Connection1.ExecuteDirect('VACUUM');
+  SQLIte3Connection1.ExecuteDirect('Begin Transaction');
+//  SQLTransaction1.Active := True;
   InitDb;
 end;
 
@@ -171,9 +167,15 @@ end;
 procedure TfMain.FormClose(Sender: TObject);
 begin
   CloseDb;
+  SQLite3Connection1.Connected := False;
+  SQLite3Connection1.Close(True);
+  SQLTransaction1.Free;
+  SQLite3Connection1.Free;
   SQLDBLibraryLoader1.UnloadLibrary;
   SQLDBLibraryLoader1.Enabled := False;
   SQLDBLibraryLoader1.Free;
+  OpenPictureDialog1.Free;
+  SavePictureDialog1.Free;
 end;
 
 procedure TfMain.btnLoadPhotoClick(Sender: TObject);
@@ -182,6 +184,10 @@ var
   f1: TFileStream;
   bst: TStream;
 begin
+  OpenPictureDialog1.Title := 'Открыть файл с фото';
+  OpenPictureDialog1.InitialDir := GetCurrentDir;
+  OpenPictureDialog1.Filter := 'Jpeg file|*.jpg';
+  OpenPictureDialog1.DefaultExt := 'jpg';
   if OpenPictureDialog1.Execute then
   begin
     if SQLQuery1.State <> dsEdit then
@@ -190,8 +196,12 @@ begin
     try
       f1 := TFileStream.Create(pictfilename, fmOpenRead);
       try
-        bst := SQLQuery1.CreateBlobStream(SQLQuery1.FieldByName('photo'), bmWrite);
-        bst.CopyFrom(f1, f1.Size);
+        try
+          bst := SQLQuery1.CreateBlobStream(SQLQuery1.FieldByName('photo'), bmWrite);
+          bst.CopyFrom(f1, f1.Size);
+        except   // если не удалось то выводим сообщение о ошибке
+          ShowMessage('Ошибка загрузки фото!');
+        end;
       finally
         bst.Free;
       end;
@@ -206,16 +216,25 @@ var
   JPEGImage: TJPEGImage;
   ms: TStream;
 begin
+  ms := nil;
   if not SQLQuery1.FieldByName('photo').IsNull then
   begin
+    SavePictureDialog1.Title := 'Сохранить фото в файл';
+    SavePictureDialog1.InitialDir := GetCurrentDir;
+    SavePictureDialog1.Filter := 'Jpeg file|*.jpg';
+    SavePictureDialog1.DefaultExt := 'jpg';
     if SavePictureDialog1.Execute then
     begin
       try
-        JPEGImage := TJPEGImage.Create;
-        ms := SQLQuery1.CreateBlobStream(SQLQuery1.FieldByName('photo'), bmRead);
-        ms.Position := 0;
-        JPEGImage.LoadFromStream(ms);
-        JPEGImage.SaveToFile(SavePictureDialog1.Filename);
+        try
+          JPEGImage := TJPEGImage.Create;
+          ms := SQLQuery1.CreateBlobStream(SQLQuery1.FieldByName('photo'), bmRead);
+          ms.Position := 0;
+          JPEGImage.LoadFromStream(ms);
+          JPEGImage.SaveToFile(SavePictureDialog1.Filename);
+        except
+          ShowMessage('Ошибка сохранения фото!');
+        end;
       finally
         JPEGImage.Free;
         ms.Free;

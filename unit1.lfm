@@ -11,6 +11,7 @@ object fMain: TfMain
   OnClose = FormClose
   OnCreate = FormCreate
   Position = poScreenCenter
+  LCLVersion = '1.7'
   Visible = False
   object DBGrid1: TDBGrid
     Left = 8
@@ -49,7 +50,7 @@ object fMain: TfMain
   object DBImage1: TDBImage
     Left = 520
     Height = 256
-    Top = 104
+    Top = 56
     Width = 274
     AutoSize = True
     Center = True
@@ -62,7 +63,7 @@ object fMain: TfMain
   object btnLoadPhoto: TButton
     Left = 520
     Height = 40
-    Top = 56
+    Top = 320
     Width = 274
     Caption = 'Загрузить фото'
     OnClick = btnLoadPhotoClick
@@ -98,7 +99,7 @@ object fMain: TfMain
   object StatusBar1: TStatusBar
     Left = 0
     Height = 23
-    Top = 592
+    Top = 572
     Width = 805
     BiDiMode = bdRightToLeft
     Panels = <    
