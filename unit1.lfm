@@ -1,12 +1,12 @@
 object fMain: TfMain
-  Left = 0
-  Height = 679
-  Top = 0
-  Width = 805
+  Left = 166
+  Height = 659
+  Top = 220
+  Width = 809
   ActiveControl = DBGrid1
   Caption = 'БД Лицо'
-  ClientHeight = 679
-  ClientWidth = 805
+  ClientHeight = 659
+  ClientWidth = 809
   Menu = MainMenu1
   OnClose = FormClose
   OnCreate = FormCreate
@@ -98,8 +98,8 @@ object fMain: TfMain
   object StatusBar1: TStatusBar
     Left = 0
     Height = 23
-    Top = 656
-    Width = 805
+    Top = 636
+    Width = 809
     BiDiMode = bdRightToLeft
     Panels = <    
       item
@@ -128,9 +128,8 @@ object fMain: TfMain
     top = 408
   end
   object SQLite3Connection1: TSQLite3Connection
-    Connected = True
+    Connected = False
     LoginPrompt = False
-    DatabaseName = 'database.db'
     KeepConnection = False
     Transaction = SQLTransaction1
     CharSet = 'UTF8'
@@ -158,7 +157,7 @@ object fMain: TfMain
     top = 504
   end
   object SQLTransaction1: TSQLTransaction
-    Active = True
+    Active = False
     Action = caCommit
     Database = SQLite3Connection1
     Options = []
@@ -179,7 +178,7 @@ object fMain: TfMain
     top = 200
   end
   object MainMenu1: TMainMenu
-    left = 8
+    left = 88
     top = 8
     object miDB: TMenuItem
       Caption = 'База данных'
@@ -227,6 +226,7 @@ object fMain: TfMain
     top = 8
   end
   object SaveDialog1: TSaveDialog
+    OnClose = SaveDialog1Close
     left = 568
     top = 64
   end

@@ -54,6 +54,7 @@ type
     procedure miCreateDbClick(Sender: TObject);
     procedure miExitClick(Sender: TObject);
     procedure miVacuumDbClick(Sender: TObject);
+    procedure SaveDialog1Close(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
     procedure CloseDb;
     procedure InitDb;
@@ -93,7 +94,6 @@ begin
     ShowMessage('Ошибка подключения к базе!');
   end;
   SQLIte3Connection1.ExecuteDirect('PRAGMA key=' + QuotedStr('12345') + ';');
-  SQLQuery1.Open;
 end;
 
 {$R *.lfm}
@@ -114,6 +114,7 @@ begin
   SQLDBLibraryLoader1.Enabled := True;
   SQLQuery1.SQL.Text := 'select * from "person"';
   InitDb;
+  SQLQuery1.Open;
 end;
 
 procedure TfMain.miAboutClick(Sender: TObject);
@@ -136,7 +137,7 @@ begin
     'middlename VARCHAR (50),                                          ' +
     'dbirth     DATE,                                                  ' +
     'photo      BLOB,                                                  ' +
-    'dateappend DATETIME DEFAULT (datetime("now","localtime")),        ' +
+    'dateappend DATETIME,                                              ' +
     'prim       TEXT);';
   SQLIte3Connection1.ExecuteDirect(sqlcreate);
   InitDb;
@@ -154,6 +155,22 @@ begin
   SQLIte3Connection1.ExecuteDirect('VACUUM');
   SQLIte3Connection1.ExecuteDirect('Begin Transaction');
   InitDb;
+  SQLQuery1.Open;
+end;
+
+procedure TfMain.SaveDialog1Close(Sender: TObject);
+begin
+  if not SQLQuery1.RecordCount>0 then
+  begin
+    SaveDialog1.Title := 'Экспорт данных в файл';
+    SaveDialog1.InitialDir := GetCurrentDir;
+    SaveDialog1.Filter := 'Excel file|*.xls';
+    SaveDialog1.DefaultExt := 'xls';
+    if SaveDialog1.Execute then
+    begin
+
+    end;
+  end;
 end;
 
 
@@ -177,6 +194,8 @@ begin
   SQLDBLibraryLoader1.Free;
   OpenPictureDialog1.Free;
   SavePictureDialog1.Free;
+  OpenDialog1.Free;
+  SaveDialog1.Free;
 end;
 
 procedure TfMain.btnLoadPhotoClick(Sender: TObject);

@@ -7,7 +7,7 @@ uses
   cthreads,
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, Unit1, sqlite3laz
+  Forms, Unit1, sqlite3laz, laz_fpspreadsheet
   { you can add units after this };
 
 {$R *.res}
