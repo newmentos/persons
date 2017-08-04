@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, sqldblib, sqldb, DB, sqlite3conn, FileUtil, Forms,
   Controls, Graphics, Dialogs, DBGrids, DBCtrls, ExtDlgs, StdCtrls, ExtCtrls,
-  ComCtrls, Menus;
+  ComCtrls, Menus, sqlite3backup;
 
 { TfMain }
 
@@ -51,8 +51,11 @@ type
     procedure FormClose(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure miAboutClick(Sender: TObject);
+    procedure miChangePassClick(Sender: TObject);
+    procedure miCreateBackupDbClick(Sender: TObject);
     procedure miCreateDbClick(Sender: TObject);
     procedure miExitClick(Sender: TObject);
+    procedure miRecoveryFromBackupDbClick(Sender: TObject);
     procedure miVacuumDbClick(Sender: TObject);
     procedure SaveDialog1Close(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
@@ -67,6 +70,7 @@ type
 var
   fMain: TfMain;
   databasefile: string;
+  passdatabase: string;
 
 implementation
 
@@ -93,7 +97,9 @@ begin
   except   // если не удалось то выводим сообщение о ошибке
     ShowMessage('Ошибка подключения к базе!');
   end;
-  SQLIte3Connection1.ExecuteDirect('PRAGMA key=' + QuotedStr('12345') + ';');
+  passdatabase := PasswordBox('Пароль базы данных',
+    'Для входа введите Ваш текущий пароль:');
+  SQLIte3Connection1.ExecuteDirect('PRAGMA key=' + QuotedStr(passdatabase) + ';');
 end;
 
 {$R *.lfm}
@@ -123,6 +129,36 @@ begin
     'https://github.com/newmentos/persons.git');
 end;
 
+procedure TfMain.miChangePassClick(Sender: TObject);
+var
+  pass1, pass2: string;
+begin
+  InitDb;
+  SQLQuery1.Open;
+  pass1 := PasswordBox('Пароль базы данных',
+    'Введите новый пароль:');
+  pass2 := PasswordBox('Пароль базы данных',
+    'Введите новый пароль еще раз:');
+  if pass1 = pass2 then
+  begin
+    CloseDb;
+    SQLIte3Connection1.ExecuteDirect('PRAGMA rekey=' + QuotedStr(pass2) + ';');
+    InitDb;
+    SQLQuery1.Open;
+  end;
+end;
+
+procedure TfMain.miCreateBackupDbClick(Sender: TObject);
+var
+  f: string;
+  BK: TSQLite3Backup;
+begin
+  f :=  ExtractFilePath(Application.ExeName)+'backup'+ PathDelim+ 'database-' + FormatDateTime('yyyy.mm.dd hh-nn-ss', Now) + '.dmp';
+  BK := TSQLite3Backup.Create;
+  BK.Backup(SQLite3Connection1, f);
+  BK.Free;
+end;
+
 procedure TfMain.miCreateDbClick(Sender: TObject);
 var
   sqlcreate: string;
@@ -148,6 +184,15 @@ begin
   Close;
 end;
 
+procedure TfMain.miRecoveryFromBackupDbClick(Sender: TObject);
+begin
+  {
+  TSQLite3Backup.Restore(FileName: string;Destination: TSQLite3Connection; LockUntilFinished: boolean;
+  DestinationDBName: string): boolean;
+  }
+  //  SQLite3Connection1.Restore;
+end;
+
 procedure TfMain.miVacuumDbClick(Sender: TObject);
 begin
   CloseDb;
@@ -160,7 +205,7 @@ end;
 
 procedure TfMain.SaveDialog1Close(Sender: TObject);
 begin
-  if not SQLQuery1.RecordCount>0 then
+  if not SQLQuery1.RecordCount > 0 then
   begin
     SaveDialog1.Title := 'Экспорт данных в файл';
     SaveDialog1.InitialDir := GetCurrentDir;
@@ -233,18 +278,18 @@ end;
 
 procedure TfMain.btnImportDataClick(Sender: TObject);
 var
-  xlsfile:string;
+  xlsfile: string;
 begin
   OpenDialog1.Title := 'Открыть файл с данными';
   OpenDialog1.InitialDir := GetCurrentDir;
   OpenDialog1.Filter := 'Excel file|*.xls';
   OpenDialog1.DefaultExt := 'xls';
-  if SQLQuery1.RecordCount>0 then
+  if SQLQuery1.RecordCount > 0 then
   begin
     if OpenDialog1.Execute then
     begin
       xlsfile := OpenDialog1.Filename;
-      ShowMessage('Выбран файл '+xlsfile);
+      ShowMessage('Выбран файл ' + xlsfile);
     end;
   end;
 end;

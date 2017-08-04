@@ -174,8 +174,8 @@ object fMain: TfMain
   end
   object Timer1: TTimer
     OnTimer = Timer1Timer
-    left = 378
-    top = 200
+    left = 88
+    top = 624
   end
   object MainMenu1: TMainMenu
     left = 88
@@ -184,6 +184,7 @@ object fMain: TfMain
       Caption = 'База данных'
       object miChangePass: TMenuItem
         Caption = 'Сменить пароль'
+        OnClick = miChangePassClick
       end
       object miCreateDb: TMenuItem
         Caption = 'Создать новую'
@@ -195,15 +196,19 @@ object fMain: TfMain
       end
       object miCreateBackupDb: TMenuItem
         Caption = 'Создать резервную копию'
+        OnClick = miCreateBackupDbClick
       end
       object miRecoveryFromBackupDb: TMenuItem
         Caption = 'Восстановить из резервной копии'
+        OnClick = miRecoveryFromBackupDbClick
       end
       object miLine: TMenuItem
         Caption = '-'
       end
       object miExit: TMenuItem
         Caption = 'Выход'
+        ShortCut = 32883
+        ShortCutKey2 = 16465
         OnClick = miExitClick
       end
     end
