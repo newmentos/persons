@@ -127,20 +127,9 @@ object fMain: TfMain
     left = 88
     top = 408
   end
-  object SQLite3Connection1: TSQLite3Connection
-    Connected = False
-    LoginPrompt = False
-    KeepConnection = False
-    Transaction = SQLTransaction1
-    CharSet = 'UTF8'
-    Options = []
-    left = 88
-    top = 504
-  end
   object SQLQuery1: TSQLQuery
     PacketRecords = -1
     FieldDefs = <>
-    Database = SQLite3Connection1
     Transaction = SQLTransaction1
     SQL.Strings = (
       'select * from "t1";'
@@ -159,7 +148,6 @@ object fMain: TfMain
   object SQLTransaction1: TSQLTransaction
     Active = False
     Action = caCommit
-    Database = SQLite3Connection1
     Options = []
     left = 224
     top = 408
@@ -207,8 +195,8 @@ object fMain: TfMain
       end
       object miExit: TMenuItem
         Caption = 'Выход'
-        ShortCut = 32883
-        ShortCutKey2 = 16465
+        ShortCut = 16465
+        ShortCutKey2 = 32883
         OnClick = miExitClick
       end
     end
@@ -234,5 +222,13 @@ object fMain: TfMain
     OnClose = SaveDialog1Close
     left = 568
     top = 64
+  end
+  object SQLite3Connection1: TSQLite3Connection
+    Connected = False
+    LoginPrompt = False
+    KeepConnection = False
+    Options = []
+    left = 88
+    top = 504
   end
 end

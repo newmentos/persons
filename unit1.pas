@@ -5,9 +5,9 @@ unit Unit1;
 interface
 
 uses
-  Classes, SysUtils, sqldblib, sqldb, DB, sqlite3conn, FileUtil, Forms,
-  Controls, Graphics, Dialogs, DBGrids, DBCtrls, ExtDlgs, StdCtrls, ExtCtrls,
-  ComCtrls, Menus, sqlite3backup;
+  Classes, SysUtils, sqldblib, sqldb, DB, sqlite3conn, FileUtil,
+  fpspreadsheetctrls, Forms, Controls, Graphics, Dialogs, DBGrids, DBCtrls,
+  ExtDlgs, StdCtrls, ExtCtrls, ComCtrls, Menus, sqlite3backup;
 
 { TfMain }
 
@@ -85,11 +85,6 @@ end;
 
 procedure TfMain.InitDb;
 begin
-  // указываем путь к базе
-  databasefile := ExtractFilePath(Application.ExeName) + 'database.db';
-  SQLite3Connection1.DatabaseName := databasefile;
-  // указываем рабочую кодировку
-  SQLite3Connection1.CharSet := 'UTF8';
   try  // пробуем подключится к базе
     SQLIte3Connection1.Open;
     SQLTransaction1.Active := True;
@@ -108,17 +103,25 @@ end;
 
 procedure TfMain.FormCreate(Sender: TObject);
 begin
-  {$IF Defined(MSWINDOWS)}
+  {$IFDEF WINDOWS}
   SQLDBLibraryLoader1.LibraryName :=
     ExtractFilePath(Application.ExeName) + 'sqlite3.dll';
-  {$ELSEIF Defined(UNIX)}
+  {$else}
   SQLDBLibraryLoader1.LibraryName :=
-    ExtractFilePath(Application.ExeName) + 'libwxsqlite3.so';
-  {$IFEND}
+    ExtractFilePath(Application.ExeName) + 'libsqlite3.' + sharedsuffix;
+  {$endif}
   SQLDBLibraryLoader1.ConnectionType := 'SQLite3';
   SQLDBLibraryLoader1.LoadLibrary;
   SQLDBLibraryLoader1.Enabled := True;
   SQLQuery1.SQL.Text := 'select * from "person"';
+  // указываем путь к базе
+  databasefile := ExtractFilePath(Application.ExeName) + 'database.db';
+  SQLite3Connection1.DatabaseName := databasefile;
+  // указываем рабочую кодировку
+  SQLite3Connection1.CharSet := 'UTF8';
+  SQLite3Connection1.Transaction := SQLTransaction1;
+  SQLTransaction1.DataBase := SQLite3Connection1;
+  SQLQuery1.DataBase := SQLite3Connection1;
   InitDb;
   SQLQuery1.Open;
 end;
@@ -153,7 +156,8 @@ var
   f: string;
   BK: TSQLite3Backup;
 begin
-  f :=  ExtractFilePath(Application.ExeName)+'backup'+ PathDelim+ 'database-' + FormatDateTime('yyyy.mm.dd hh-nn-ss', Now) + '.dmp';
+  f := ExtractFilePath(Application.ExeName) + 'backup' + PathDelim +
+    'database-' + FormatDateTime('yyyy.mm.dd hh-nn-ss', Now) + '.dmp';
   BK := TSQLite3Backup.Create;
   BK.Backup(SQLite3Connection1, f);
   BK.Free;
