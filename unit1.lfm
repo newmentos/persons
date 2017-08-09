@@ -1,11 +1,11 @@
 object fMain: TfMain
   Left = 166
-  Height = 659
+  Height = 639
   Top = 220
   Width = 809
   ActiveControl = DBGrid1
   Caption = 'БД Лицо'
-  ClientHeight = 659
+  ClientHeight = 639
   ClientWidth = 809
   Menu = MainMenu1
   OnClose = FormClose
@@ -98,8 +98,8 @@ object fMain: TfMain
   end
   object StatusBar1: TStatusBar
     Left = 0
-    Height = 21
-    Top = 599
+    Height = 23
+    Top = 596
     Width = 809
     BiDiMode = bdRightToLeft
     Panels = <    

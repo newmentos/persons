@@ -63,6 +63,7 @@ type
     procedure Timer1Timer(Sender: TObject);
     procedure CloseDb;
     procedure InitDb;
+    procedure VacuumDb;
   private
     { private declarations }
   public
@@ -86,6 +87,16 @@ var
   passdatabase: string;
 
 implementation
+
+procedure TfMain.VacuumDb;
+begin
+  CloseDb;
+  SQLIte3Connection1.ExecuteDirect('End Transaction');
+  SQLIte3Connection1.ExecuteDirect('VACUUM');
+  SQLIte3Connection1.ExecuteDirect('Begin Transaction');
+  InitDb;
+  SQLQuery1.Open;
+end;
 
 procedure TfMain.CloseDb;
 begin
@@ -131,7 +142,7 @@ begin
   // указываем путь к базе
   databasefile := ExtractFilePath(Application.ExeName) + 'database.db';
   enabletables := True;
-  if FileExists(databasefile) then
+  if not FileExists(databasefile) then
     enabletables := False;
   SQLite3Connection1.DatabaseName := databasefile;
   // указываем рабочую кодировку
@@ -176,6 +187,8 @@ var
   BK: TSQLite3Backup;
   zip: TAbZipper;
 begin
+  // Сжимаем базу перед созданием дампа
+  VacuumDb;
   // Создаем дамп базы данных
   fdump := 'database-' + FormatDateTime('yyyy.mm.dd hh-nn-ss', Now) + '.dmp';
   fzip := ExtractFilePath(Application.ExeName) + 'backup' + PathDelim +
@@ -216,6 +229,11 @@ end;
 
 procedure TfMain.miRecoveryFromBackupDbClick(Sender: TObject);
 begin
+  // Выбираем архивный файл дампа
+
+  // Распаковываем файл с дампом
+
+  // Восстанавливаем БД
   {
   TSQLite3Backup.Restore(FileName: string;Destination: TSQLite3Connection; LockUntilFinished: boolean;
   DestinationDBName: string): boolean;
@@ -225,12 +243,7 @@ end;
 
 procedure TfMain.miVacuumDbClick(Sender: TObject);
 begin
-  CloseDb;
-  SQLIte3Connection1.ExecuteDirect('End Transaction');
-  SQLIte3Connection1.ExecuteDirect('VACUUM');
-  SQLIte3Connection1.ExecuteDirect('Begin Transaction');
-  InitDb;
-  SQLQuery1.Open;
+  VacuumDb;
 end;
 
 procedure TfMain.SaveDialog1Close(Sender: TObject);
