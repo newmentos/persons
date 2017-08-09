@@ -115,20 +115,24 @@ end;
 { TfMain }
 
 procedure TfMain.FormCreate(Sender: TObject);
+var
+  enabletables: boolean;
 begin
   {$IFDEF WINDOWS}
   SQLDBLibraryLoader1.LibraryName :=
     ExtractFilePath(Application.ExeName) + 'sqlite3.dll';
   {$else}
   SQLDBLibraryLoader1.LibraryName :=
-    ExtractFilePath(Application.ExeName) + 'libsqlite3.' + sharedsuffix;
+    ExtractFilePath(Application.ExeName) + 'libsqlite3.so';
   {$endif}
   SQLDBLibraryLoader1.ConnectionType := 'SQLite3';
   SQLDBLibraryLoader1.LoadLibrary;
   SQLDBLibraryLoader1.Enabled := True;
-  SQLQuery1.SQL.Text := 'select * from "person"';
   // указываем путь к базе
   databasefile := ExtractFilePath(Application.ExeName) + 'database.db';
+  enabletables := True;
+  if FileExists(databasefile) then
+    enabletables := False;
   SQLite3Connection1.DatabaseName := databasefile;
   // указываем рабочую кодировку
   SQLite3Connection1.CharSet := 'UTF8';
@@ -136,6 +140,9 @@ begin
   SQLTransaction1.DataBase := SQLite3Connection1;
   SQLQuery1.DataBase := SQLite3Connection1;
   InitDb;
+  if not enabletables then
+    SQLIte3Connection1.ExecuteDirect(sqlcreate);
+  SQLQuery1.SQL.Text := 'select * from "person"';
   SQLQuery1.Open;
 end;
 
@@ -165,13 +172,13 @@ end;
 
 procedure TfMain.miCreateBackupDbClick(Sender: TObject);
 var
-  fdump,fzip: string;
+  fdump, fzip: string;
   BK: TSQLite3Backup;
   zip: TAbZipper;
 begin
   // Создаем дамп базы данных
   fdump := 'database-' + FormatDateTime('yyyy.mm.dd hh-nn-ss', Now) + '.dmp';
-  fzip:=ExtractFilePath(Application.ExeName) + 'backup' + PathDelim +
+  fzip := ExtractFilePath(Application.ExeName) + 'backup' + PathDelim +
     'database-' + FormatDateTime('yyyy.mm.dd hh-nn-ss', Now) + '.zip';
   BK := TSQLite3Backup.Create;
   BK.Backup(SQLite3Connection1, fdump);
@@ -190,7 +197,7 @@ begin
   zip.CloseArchive;
   // Удаляем дамп
   DeleteFile(fdump);
-  ShowMessage('Создан файл резервной копии '+fzip);
+  ShowMessage('Создан файл резервной копии ' + fzip);
 end;
 
 procedure TfMain.miCreateDbClick(Sender: TObject);

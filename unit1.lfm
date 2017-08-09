@@ -98,8 +98,8 @@ object fMain: TfMain
   end
   object StatusBar1: TStatusBar
     Left = 0
-    Height = 23
-    Top = 616
+    Height = 21
+    Top = 599
     Width = 809
     BiDiMode = bdRightToLeft
     Panels = <    
