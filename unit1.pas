@@ -5,9 +5,11 @@ unit Unit1;
 interface
 
 uses
-  Classes, SysUtils, sqldblib, sqldb, DB, sqlite3conn, FileUtil,
-  fpspreadsheetctrls, Forms, Controls, Graphics, Dialogs, DBGrids, DBCtrls,
-  ExtDlgs, StdCtrls, ExtCtrls, ComCtrls, Menus, sqlite3backup;
+  Classes, SysUtils, sqldblib, sqldb, DB, FileUtil, Forms,
+  Controls, Graphics, Dialogs, DBGrids, DBCtrls, ExtDlgs, StdCtrls, ExtCtrls,
+  ComCtrls, Menus, sqlite3backup, sqlite3conn
+  //, AbUnzper
+  , AbZipper, AbBrowse, AbZBrows, AbUtils, AbZipTyp;
 
 { TfMain }
 
@@ -66,6 +68,17 @@ type
   public
     { public declarations }
   end;
+
+const
+  sqlcreate: string = 'CREATE TABLE person (' +
+    'id         INTEGER      PRIMARY KEY AUTOINCREMENT UNIQUE NOT NULL,' +
+    'family     VARCHAR (50),                                          ' +
+    'name       VARCHAR (50),                                          ' +
+    'middlename VARCHAR (50),                                          ' +
+    'dbirth     DATE,                                                  ' +
+    'photo      BLOB,                                                  ' +
+    'dateappend DATETIME,                                              ' +
+    'prim       TEXT);';
 
 var
   fMain: TfMain;
@@ -138,14 +151,13 @@ var
 begin
   InitDb;
   SQLQuery1.Open;
-  pass1 := PasswordBox('Пароль базы данных',
-    'Введите новый пароль:');
-  pass2 := PasswordBox('Пароль базы данных',
-    'Введите новый пароль еще раз:');
+  pass1 := PasswordBox('Пароль базы данных', 'Введите новый пароль:');
+  pass2 := PasswordBox('Пароль базы данных', 'Введите новый пароль еще раз:');
   if pass1 = pass2 then
   begin
     CloseDb;
     SQLIte3Connection1.ExecuteDirect('PRAGMA rekey=' + QuotedStr(pass2) + ';');
+    ShowMessage('Пароль успешно изменен!');
     InitDb;
     SQLQuery1.Open;
   end;
@@ -153,32 +165,39 @@ end;
 
 procedure TfMain.miCreateBackupDbClick(Sender: TObject);
 var
-  f: string;
+  fdump,fzip: string;
   BK: TSQLite3Backup;
+  zip: TAbZipper;
 begin
-  f := ExtractFilePath(Application.ExeName) + 'backup' + PathDelim +
-    'database-' + FormatDateTime('yyyy.mm.dd hh-nn-ss', Now) + '.dmp';
+  // Создаем дамп базы данных
+  fdump := 'database-' + FormatDateTime('yyyy.mm.dd hh-nn-ss', Now) + '.dmp';
+  fzip:=ExtractFilePath(Application.ExeName) + 'backup' + PathDelim +
+    'database-' + FormatDateTime('yyyy.mm.dd hh-nn-ss', Now) + '.zip';
   BK := TSQLite3Backup.Create;
-  BK.Backup(SQLite3Connection1, f);
+  BK.Backup(SQLite3Connection1, fdump);
   BK.Free;
+  // Упаковываем в архив с паролем
+  Zip := TAbZipper.Create(Application);
+  Zip.ArchiveType := atZip;
+  Zip.FileName := fzip;
+  Zip.AddFiles(fdump, 1);
+  Zip.ZipfileComment := 'Дамп базы данных от ' + FormatDateTime(
+    'yyyy.mm.dd hh-nn-ss', Now);
+  Zip.CompressionMethodToUse := smBestMethod;
+  zip.DeflationOption := doMaximum;
+  Zip.Password := passdatabase;
+  zip.Save;
+  zip.CloseArchive;
+  // Удаляем дамп
+  DeleteFile(fdump);
+  ShowMessage('Создан файл резервной копии '+fzip);
 end;
 
 procedure TfMain.miCreateDbClick(Sender: TObject);
-var
-  sqlcreate: string;
 begin
   CloseDb;
   if FileExists(databasefile) then
     DeleteFile(databasefile);
-  sqlcreate := 'CREATE TABLE person (' +
-    'id         INTEGER      PRIMARY KEY AUTOINCREMENT UNIQUE NOT NULL,' +
-    'family     VARCHAR (50),                                          ' +
-    'name       VARCHAR (50),                                          ' +
-    'middlename VARCHAR (50),                                          ' +
-    'dbirth     DATE,                                                  ' +
-    'photo      BLOB,                                                  ' +
-    'dateappend DATETIME,                                              ' +
-    'prim       TEXT);';
   SQLIte3Connection1.ExecuteDirect(sqlcreate);
   InitDb;
 end;
@@ -221,7 +240,6 @@ begin
     end;
   end;
 end;
-
 
 procedure TfMain.Timer1Timer(Sender: TObject);
 begin

@@ -11,6 +11,7 @@ object fMain: TfMain
   OnClose = FormClose
   OnCreate = FormCreate
   Position = poScreenCenter
+  LCLVersion = '1.6.4.0'
   Visible = False
   object DBGrid1: TDBGrid
     Left = 8
@@ -98,7 +99,7 @@ object fMain: TfMain
   object StatusBar1: TStatusBar
     Left = 0
     Height = 23
-    Top = 636
+    Top = 616
     Width = 809
     BiDiMode = bdRightToLeft
     Panels = <    
