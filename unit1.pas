@@ -7,9 +7,8 @@ interface
 uses
   Classes, SysUtils, sqldblib, sqldb, DB, FileUtil, Forms,
   Controls, Graphics, Dialogs, DBGrids, DBCtrls, ExtDlgs, StdCtrls, ExtCtrls,
-  ComCtrls, Menus, sqlite3backup, sqlite3conn
-  //, AbUnzper
-  , AbZipper, AbBrowse, AbZBrows, AbUtils, AbZipTyp;
+  ComCtrls, Menus, sqlite3backup, sqlite3conn, AbUnzper, AbZipper,
+  AbBrowse, AbZBrows, AbUtils, AbZipTyp, AbArcTyp;
 
 { TfMain }
 
@@ -183,24 +182,24 @@ end;
 
 procedure TfMain.miCreateBackupDbClick(Sender: TObject);
 var
-  fdump, fzip: string;
+  dumpfile, zipfile: string;
   BK: TSQLite3Backup;
   zip: TAbZipper;
 begin
   // Сжимаем базу перед созданием дампа
   VacuumDb;
   // Создаем дамп базы данных
-  fdump := 'database-' + FormatDateTime('yyyy.mm.dd hh-nn-ss', Now) + '.dmp';
-  fzip := ExtractFilePath(Application.ExeName) + 'backup' + PathDelim +
-    'database-' + FormatDateTime('yyyy.mm.dd hh-nn-ss', Now) + '.zip';
+  dumpfile := 'database-' + FormatDateTime('yyyy.mm.dd hh-nn-ss', Now) + '.dmp';
+  zipfile := ExtractFilePath(Application.ExeName) + 'backup' +
+    PathDelim + 'database-' + FormatDateTime('yyyy.mm.dd hh-nn-ss', Now) + '.zip';
   BK := TSQLite3Backup.Create;
-  BK.Backup(SQLite3Connection1, fdump);
+  BK.Backup(SQLite3Connection1, dumpfile);
   BK.Free;
   // Упаковываем в архив с паролем
   Zip := TAbZipper.Create(Application);
   Zip.ArchiveType := atZip;
-  Zip.FileName := fzip;
-  Zip.AddFiles(fdump, 1);
+  Zip.FileName := zipfile;
+  Zip.AddFiles(dumpfile, 1);
   Zip.ZipfileComment := 'Дамп базы данных от ' + FormatDateTime(
     'yyyy.mm.dd hh-nn-ss', Now);
   Zip.CompressionMethodToUse := smBestMethod;
@@ -209,8 +208,8 @@ begin
   zip.Save;
   zip.CloseArchive;
   // Удаляем дамп
-  DeleteFile(fdump);
-  ShowMessage('Создан файл резервной копии ' + fzip);
+  DeleteFile(dumpfile);
+  ShowMessage('Создан файл резервной копии ' + zipfile);
 end;
 
 procedure TfMain.miCreateDbClick(Sender: TObject);
@@ -220,6 +219,7 @@ begin
     DeleteFile(databasefile);
   SQLIte3Connection1.ExecuteDirect(sqlcreate);
   InitDb;
+  SQLQuery1.Open;
 end;
 
 procedure TfMain.miExitClick(Sender: TObject);
@@ -228,17 +228,44 @@ begin
 end;
 
 procedure TfMain.miRecoveryFromBackupDbClick(Sender: TObject);
+var
+  zipfile, dumpfile: string;
+  UnZip: TAbUnZipper;
+  BK: TSQLite3Backup;
 begin
-  // Выбираем архивный файл дампа
-
-  // Распаковываем файл с дампом
-
-  // Восстанавливаем БД
-  {
-  TSQLite3Backup.Restore(FileName: string;Destination: TSQLite3Connection; LockUntilFinished: boolean;
-  DestinationDBName: string): boolean;
-  }
-  //  SQLite3Connection1.Restore;
+  OpenDialog1.Title := 'Открыть файл дампа';
+  OpenDialog1.InitialDir := ExtractFilePath(Application.ExeName) + PathDelim + 'backup';
+  OpenDialog1.Filter := 'Zip file|*.zip';
+  OpenDialog1.DefaultExt := 'zip';
+  if OpenDialog1.Execute then
+  begin
+    // Выбираем архивный файл с дампом
+    zipfile := OpenDialog1.Filename;
+    dumpfile := ChangeFileExt(zipfile, '.dmp');
+    // Распаковываем файл с дампом
+    UnZip := TAbUnZipper.Create(nil);
+    UnZip.BaseDirectory := ExtractFilePath(Application.ExeName) + 'backup';
+    UnZip.ExtractOptions := [eoCreateDirs, eoRestorePath];
+    UnZip.FileName := zipfile;
+    UnZip.Password := passdatabase;
+    try
+      UnZip.ExtractFiles(dumpfile);
+      // Восстанавливаем БД
+      BK := TSQLite3Backup.Create;
+      try
+        CloseDb;
+        BK.Restore(dumpfile, SQLite3Connection1);
+        InitDb;
+        SQLQuery1.Open;
+        ShowMessage('База успешно восстановлена из файла ' + dumpfile);
+      finally
+        BK.Free
+      end;
+    finally
+      DeleteFile(dumpfile);
+      UnZip.Free;
+    end;
+  end;
 end;
 
 procedure TfMain.miVacuumDbClick(Sender: TObject);
@@ -251,13 +278,15 @@ begin
   if not SQLQuery1.RecordCount > 0 then
   begin
     SaveDialog1.Title := 'Экспорт данных в файл';
-    SaveDialog1.InitialDir := GetCurrentDir;
+    SaveDialog1.InitialDir := ExtractFilePath(Application.ExeName);
     SaveDialog1.Filter := 'Excel file|*.xls';
     SaveDialog1.DefaultExt := 'xls';
+{
     if SaveDialog1.Execute then
     begin
 
     end;
+}
   end;
 end;
 

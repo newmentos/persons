@@ -15,8 +15,8 @@ object fMain: TfMain
   Visible = False
   object DBGrid1: TDBGrid
     Left = 8
-    Height = 304
-    Top = 344
+    Height = 240
+    Top = 346
     Width = 504
     AutoAdvance = aaNone
     Color = clWindow
@@ -80,7 +80,7 @@ object fMain: TfMain
   end
   object DBMemo1: TDBMemo
     Left = 520
-    Height = 186
+    Height = 122
     Top = 464
     Width = 274
     DataField = 'prim'
