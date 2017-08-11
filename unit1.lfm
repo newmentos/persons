@@ -121,6 +121,7 @@ object fMain: TfMain
     Top = 56
     Width = 274
     Caption = 'Экспорт списка'
+    OnClick = btnExportDataClick
     TabOrder = 7
   end
   object SQLDBLibraryLoader1: TSQLDBLibraryLoader
@@ -208,6 +209,7 @@ object fMain: TfMain
       end
       object miExportData: TMenuItem
         Caption = 'Экспорт'
+        OnClick = miExportDataClick
       end
     end
     object miAbout: TMenuItem
@@ -220,7 +222,6 @@ object fMain: TfMain
     top = 8
   end
   object SaveDialog1: TSaveDialog
-    OnClose = SaveDialog1Close
     left = 568
     top = 64
   end

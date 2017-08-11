@@ -8,7 +8,8 @@ uses
   Classes, SysUtils, sqldblib, sqldb, DB, FileUtil, Forms,
   Controls, Graphics, Dialogs, DBGrids, DBCtrls, ExtDlgs, StdCtrls, ExtCtrls,
   ComCtrls, Menus, sqlite3backup, sqlite3conn, AbUnzper, AbZipper,
-  AbBrowse, AbZBrows, AbUtils, AbZipTyp, AbArcTyp;
+  AbBrowse, AbZBrows, AbUtils, AbZipTyp, AbArcTyp,
+  fpspreadsheet;
 
 { TfMain }
 
@@ -46,6 +47,7 @@ type
     SQLTransaction1: TSQLTransaction;
     StatusBar1: TStatusBar;
     Timer1: TTimer;
+    procedure btnExportDataClick(Sender: TObject);
     procedure btnImportDataClick(Sender: TObject);
     procedure btnLoadPhotoClick(Sender: TObject);
     procedure btnSavePhotoClick(Sender: TObject);
@@ -56,9 +58,9 @@ type
     procedure miCreateBackupDbClick(Sender: TObject);
     procedure miCreateDbClick(Sender: TObject);
     procedure miExitClick(Sender: TObject);
+    procedure miExportDataClick(Sender: TObject);
     procedure miRecoveryFromBackupDbClick(Sender: TObject);
     procedure miVacuumDbClick(Sender: TObject);
-    procedure SaveDialog1Close(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
     procedure CloseDb;
     procedure InitDb;
@@ -85,6 +87,7 @@ var
   fMain: TfMain;
   databasefile: string;
   passdatabase: string;
+  CurDir: string;
 
 implementation
 
@@ -103,7 +106,7 @@ begin
   SQLTransaction1.CloseDataSets;
   SQLQuery1.Active := False;
   SQLQuery1.Close;
-//  SQLite3Connection1.CloseTransactions;
+  //  SQLite3Connection1.CloseTransactions;
   SQLTransaction1.Active := False;
 end;
 
@@ -129,18 +132,19 @@ procedure TfMain.FormCreate(Sender: TObject);
 var
   enabletables: boolean;
 begin
+  CurDir := ExtractFilePath(Application.ExeName);
   {$IFDEF WINDOWS}
   SQLDBLibraryLoader1.LibraryName :=
-    ExtractFilePath(Application.ExeName) + 'sqlite3.dll';
+    CurDir + 'sqlite3.dll';
   {$else}
   SQLDBLibraryLoader1.LibraryName :=
-    ExtractFilePath(Application.ExeName) + 'libsqlite3.so';
+    CurDir + 'libsqlite3.so';
   {$endif}
   SQLDBLibraryLoader1.ConnectionType := 'SQLite3';
   SQLDBLibraryLoader1.LoadLibrary;
   SQLDBLibraryLoader1.Enabled := True;
   // указываем путь к базе
-  databasefile := ExtractFilePath(Application.ExeName) + 'database.db';
+  databasefile := CurDir + 'database.db';
   enabletables := True;
   if not FileExists(databasefile) then
     enabletables := False;
@@ -188,14 +192,11 @@ var
   zip: TAbZipper;
 begin
   // Сжимаем базу перед созданием дампа
-  CloseDb;
-  SQLIte3Connection1.ExecuteDirect('End Transaction');
-  SQLIte3Connection1.ExecuteDirect('VACUUM');
-  SQLIte3Connection1.ExecuteDirect('Begin Transaction');
+  VacuumDb;
   // Создаем дамп базы данных
   dumpfile := 'database-' + FormatDateTime('yyyy.mm.dd hh-nn-ss', Now) + '.dmp';
-  zipfile := ExtractFilePath(Application.ExeName) + 'backup' +
-    PathDelim + 'database-' + FormatDateTime('yyyy.mm.dd hh-nn-ss', Now) + '.zip';
+  zipfile := CurDir + 'backup' + PathDelim + 'database-' +
+    FormatDateTime('yyyy.mm.dd hh-nn-ss', Now) + '.zip';
   BK := TSQLite3Backup.Create;
   try
     BK.Backup(SQLite3Connection1, dumpfile);
@@ -218,7 +219,6 @@ begin
     zip.Free;
     BK.Free;
   end;
-  InitDb;
   SQLQuery1.Open;
 end;
 
@@ -237,6 +237,12 @@ begin
   Close;
 end;
 
+procedure TfMain.miExportDataClick(Sender: TObject);
+begin
+  // Экспорт данных в файл
+  // уже реализовано кнопкой
+end;
+
 procedure TfMain.miRecoveryFromBackupDbClick(Sender: TObject);
 var
   zipfile, dumpfile: string;
@@ -244,7 +250,7 @@ var
   BK: TSQLite3Backup;
 begin
   OpenDialog1.Title := 'Открыть файл дампа';
-  OpenDialog1.InitialDir := ExtractFilePath(Application.ExeName) + PathDelim + 'backup';
+  OpenDialog1.InitialDir := CurDir + PathDelim + 'backup';
   OpenDialog1.Filter := 'Zip file|*.zip';
   OpenDialog1.DefaultExt := 'zip';
   if OpenDialog1.Execute then
@@ -254,7 +260,7 @@ begin
     dumpfile := ChangeFileExt(zipfile, '.dmp');
     // Распаковываем файл с дампом
     UnZip := TAbUnZipper.Create(nil);
-    UnZip.BaseDirectory := ExtractFilePath(Application.ExeName) + 'backup';
+    UnZip.BaseDirectory := CurDir + 'backup';
     UnZip.ExtractOptions := [eoCreateDirs, eoRestorePath];
     UnZip.FileName := zipfile;
     UnZip.Password := passdatabase;
@@ -288,23 +294,6 @@ begin
   VacuumDb;
 end;
 
-procedure TfMain.SaveDialog1Close(Sender: TObject);
-begin
-  if not SQLQuery1.RecordCount > 0 then
-  begin
-    SaveDialog1.Title := 'Экспорт данных в файл';
-    SaveDialog1.InitialDir := ExtractFilePath(Application.ExeName);
-    SaveDialog1.Filter := 'Excel file|*.xls';
-    SaveDialog1.DefaultExt := 'xls';
-{
-    if SaveDialog1.Execute then
-    begin
-
-    end;
-}
-  end;
-end;
-
 procedure TfMain.Timer1Timer(Sender: TObject);
 begin
   StatusBar1.Panels[0].Text := DateToStr(now);
@@ -336,7 +325,7 @@ var
   bst: TStream;
 begin
   OpenPictureDialog1.Title := 'Открыть файл с фото';
-  OpenPictureDialog1.InitialDir := GetCurrentDir;
+  OpenPictureDialog1.InitialDir := CurDir;
   OpenPictureDialog1.Filter := 'Jpeg file|*.jpg';
   OpenPictureDialog1.DefaultExt := 'jpg';
   if OpenPictureDialog1.Execute then
@@ -367,16 +356,87 @@ var
   xlsfile: string;
 begin
   OpenDialog1.Title := 'Открыть файл с данными';
-  OpenDialog1.InitialDir := GetCurrentDir;
+  OpenDialog1.InitialDir := CurDir;
   OpenDialog1.Filter := 'Excel file|*.xls';
   OpenDialog1.DefaultExt := 'xls';
+  if OpenDialog1.Execute then
+  begin
+    xlsfile := OpenDialog1.Filename;
+    ShowMessage('Выбран файл ' + xlsfile);
+  end;
+end;
+
+procedure TfMain.btnExportDataClick(Sender: TObject);
+var
+  exportxlsfile, tmpjpgfile: string;
+  ExpWorkbook: TsWorkbook;
+  ExpWorksheet: TsWorksheet;
+  i: integer;
+  j: longint;
+  ftype: TFieldType;
+  ms: TStream;
+  JPEGImage: TJPEGImage;
+begin
+  // Экспорт данных в файл
+  tmpjpgfile := CurDir + '1.jpg';
   if SQLQuery1.RecordCount > 0 then
   begin
-    if OpenDialog1.Execute then
+    SaveDialog1.Title := 'Экспорт данных в файл';
+    SaveDialog1.InitialDir := CurDir;
+    SaveDialog1.Filter := 'Excel file|*.xls';
+    SaveDialog1.DefaultExt := 'xls';
+    SaveDialog1.FileName := CurDir + FormatDateTime('yyyy.mm.dd hh-nn-ss',
+      Now) + '.xls';
+    if SaveDialog1.Execute then
     begin
-      xlsfile := OpenDialog1.Filename;
-      ShowMessage('Выбран файл ' + xlsfile);
+      exportxlsfile := SaveDialog1.FileName;
+      ExpWorkbook := TsWorkbook.Create;
+      ExpWorksheet := ExpWorkbook.AddWorksheet('export');
+      ExpWorkbook.Options := [boFileStream];
+      // Перебираем столбцы БД для имен столбцов
+      for i := 0 to SQLQuery1.FieldCount - 1 do
+      begin
+        ExpWorksheet.WriteCellValueAsString(0, i,
+          SQLQuery1.Fields[i].FieldName);
+      end;
+      SQLQuery1.First;
+      // Перебираем строки БД для вывода строк
+      for j := 1 to SQLQuery1.RecordCount do
+      begin
+        for i := 0 to SQLQuery1.FieldCount - 1 do
+        begin
+          ftype := SQLQuery1.Fields[i].DataType;
+          if ftype = ftBlob then
+          begin
+            if not SQLQuery1.FieldByName('photo').IsNull then
+            begin
+              ms := nil;
+              JPEGImage := nil;
+              ms := SQLQuery1.CreateBlobStream(SQLQuery1.FieldByName('photo'), bmRead);
+              ms.Position := 0;
+              try
+                //                JPEGImage.LoadFromStream(ms);
+                //                JPEGImage.SaveToFile(tmpjpgfile);
+                ExpWorksheet.WriteImage(j, i, tmpjpgfile);
+              finally
+                JPEGImage.Free;
+                ms.Free;
+                if FileExists(tmpjpgfile) then
+                  DeleteFile(tmpjpgfile);
+              end;
+            end;
+          end
+          else
+            ExpWorksheet.WriteCellValueAsString(j, i, SQLQuery1.Fields[i].AsString);
+        end;
+        SQLQuery1.Next;
+      end;
+      // Записываем все в файл
+      ExpWorkbook.WriteToFile(exportxlsfile);
+      ExpWorkbook.Free;
     end;
+    ShowMessage('Файл ' + exportxlsfile + ' сохранен.');
+    SQLQuery1.First;
   end;
 end;
 
@@ -389,7 +449,7 @@ begin
   if not SQLQuery1.FieldByName('photo').IsNull then
   begin
     SavePictureDialog1.Title := 'Сохранить фото в файл';
-    SavePictureDialog1.InitialDir := GetCurrentDir;
+    SavePictureDialog1.InitialDir := CurDir;
     SavePictureDialog1.Filter := 'Jpeg file|*.jpg';
     SavePictureDialog1.DefaultExt := 'jpg';
     if SavePictureDialog1.Execute then
