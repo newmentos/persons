@@ -70,6 +70,7 @@ type
   end;
 
 const
+  sqldrop: string = 'DROP TABLE person;';
   sqlcreate: string = 'CREATE TABLE person (' +
     'id         INTEGER      PRIMARY KEY AUTOINCREMENT UNIQUE NOT NULL,' +
     'family     VARCHAR (50),                                          ' +
@@ -102,7 +103,7 @@ begin
   SQLTransaction1.CloseDataSets;
   SQLQuery1.Active := False;
   SQLQuery1.Close;
-  SQLite3Connection1.CloseTransactions;
+//  SQLite3Connection1.CloseTransactions;
   SQLTransaction1.Active := False;
 end;
 
@@ -187,36 +188,45 @@ var
   zip: TAbZipper;
 begin
   // Сжимаем базу перед созданием дампа
-  VacuumDb;
+  CloseDb;
+  SQLIte3Connection1.ExecuteDirect('End Transaction');
+  SQLIte3Connection1.ExecuteDirect('VACUUM');
+  SQLIte3Connection1.ExecuteDirect('Begin Transaction');
   // Создаем дамп базы данных
   dumpfile := 'database-' + FormatDateTime('yyyy.mm.dd hh-nn-ss', Now) + '.dmp';
   zipfile := ExtractFilePath(Application.ExeName) + 'backup' +
     PathDelim + 'database-' + FormatDateTime('yyyy.mm.dd hh-nn-ss', Now) + '.zip';
   BK := TSQLite3Backup.Create;
-  BK.Backup(SQLite3Connection1, dumpfile);
-  BK.Free;
-  // Упаковываем в архив с паролем
-  Zip := TAbZipper.Create(Application);
-  Zip.ArchiveType := atZip;
-  Zip.FileName := zipfile;
-  Zip.AddFiles(dumpfile, 1);
-  Zip.ZipfileComment := 'Дамп базы данных от ' + FormatDateTime(
-    'yyyy.mm.dd hh-nn-ss', Now);
-  Zip.CompressionMethodToUse := smBestMethod;
-  zip.DeflationOption := doMaximum;
-  Zip.Password := passdatabase;
-  zip.Save;
-  zip.CloseArchive;
-  // Удаляем дамп
-  DeleteFile(dumpfile);
-  ShowMessage('Создан файл резервной копии ' + zipfile);
+  try
+    BK.Backup(SQLite3Connection1, dumpfile);
+    // Упаковываем в архив с паролем
+    zip := TAbZipper.Create(Application);
+    zip.ArchiveType := atZip;
+    zip.FileName := zipfile;
+    zip.AddFiles(dumpfile, 1);
+    zip.ZipfileComment := 'Дамп базы данных от ' + FormatDateTime(
+      'yyyy.mm.dd hh-nn-ss', Now);
+    zip.CompressionMethodToUse := smBestMethod;
+    zip.DeflationOption := doMaximum;
+    Zip.Password := passdatabase;
+    zip.Save;
+    zip.CloseArchive;
+    // Удаляем дамп
+    DeleteFile(dumpfile);
+    ShowMessage('Создан файл резервной копии ' + zipfile);
+  finally
+    zip.Free;
+    BK.Free;
+  end;
+  InitDb;
+  SQLQuery1.Open;
 end;
 
 procedure TfMain.miCreateDbClick(Sender: TObject);
 begin
   CloseDb;
-  if FileExists(databasefile) then
-    DeleteFile(databasefile);
+  // Пересоздаем БД
+  SQLIte3Connection1.ExecuteDirect(sqldrop);
   SQLIte3Connection1.ExecuteDirect(sqlcreate);
   InitDb;
   SQLQuery1.Open;
@@ -249,20 +259,25 @@ begin
     UnZip.FileName := zipfile;
     UnZip.Password := passdatabase;
     try
-      UnZip.ExtractFiles(dumpfile);
+      UnZip.ExtractFiles('*.dmp');
       // Восстанавливаем БД
-      BK := TSQLite3Backup.Create;
-      try
-        CloseDb;
-        BK.Restore(dumpfile, SQLite3Connection1);
-        InitDb;
-        SQLQuery1.Open;
-        ShowMessage('База успешно восстановлена из файла ' + dumpfile);
-      finally
-        BK.Free
-      end;
+      if FileExists(dumpfile) then
+      begin
+        BK := TSQLite3Backup.Create;
+        try
+          CloseDb;
+          BK.Restore(dumpfile, SQLite3Connection1);
+          InitDb;
+          SQLQuery1.Open;
+          ShowMessage('База успешно восстановлена из файла ' + dumpfile);
+        finally
+          BK.Free
+        end;
+        DeleteFile(dumpfile);
+      end
+      else
+        ShowMessage('Файл ' + dumpfile + ' не распаковался');
     finally
-      DeleteFile(dumpfile);
       UnZip.Free;
     end;
   end;
