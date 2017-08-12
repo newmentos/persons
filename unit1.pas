@@ -5,11 +5,11 @@ unit Unit1;
 interface
 
 uses
-  Classes, SysUtils, sqldblib, sqldb, DB, FileUtil, Forms,
+  Classes, SysUtils, sqldblib, sqldb, DB, typinfo, FileUtil, Forms,
   Controls, Graphics, Dialogs, DBGrids, DBCtrls, ExtDlgs, StdCtrls, ExtCtrls,
   ComCtrls, Menus, sqlite3backup, sqlite3conn, AbUnzper, AbZipper,
   AbBrowse, AbZBrows, AbUtils, AbZipTyp, AbArcTyp,
-  fpspreadsheet;
+  fpspreadsheet, fpsexport, fpsTypes;
 
 { TfMain }
 
@@ -24,6 +24,7 @@ type
     DBImage1: TDBImage;
     DBMemo1: TDBMemo;
     DBNavigator1: TDBNavigator;
+    FPSExport1: TFPSExport;
     MainMenu1: TMainMenu;
     miImportData: TMenuItem;
     miExportData: TMenuItem;
@@ -72,6 +73,12 @@ type
   end;
 
 const
+  OUTPUT_FORMAT = sfExcel8;
+  {
+   sfExcel2, sfExcel5, sfExcel8, sfExcelXML, sfOOXML, sfOpenDocument, sfCSV,
+   sfHTML, sfWikiTable_Pipes, sfWikiTable_WikiMedia, sfUser
+  }
+
   sqldrop: string = 'DROP TABLE person;';
   sqlcreate: string = 'CREATE TABLE person (' +
     'id         INTEGER      PRIMARY KEY AUTOINCREMENT UNIQUE NOT NULL,' +
@@ -241,6 +248,7 @@ procedure TfMain.miExportDataClick(Sender: TObject);
 begin
   // Экспорт данных в файл
   // уже реализовано кнопкой
+  btnExportDataClick(self);
 end;
 
 procedure TfMain.miRecoveryFromBackupDbClick(Sender: TObject);
@@ -376,9 +384,12 @@ var
   ftype: TFieldType;
   ms: TStream;
   JPEGImage: TJPEGImage;
+  {
+  Exp: TFPSExport;
+  ExpSettings: TFPSExportFormatSettings;
+  }
 begin
   // Экспорт данных в файл
-  tmpjpgfile := CurDir + '1.jpg';
   if SQLQuery1.RecordCount > 0 then
   begin
     SaveDialog1.Title := 'Экспорт данных в файл';
@@ -390,6 +401,23 @@ begin
     if SaveDialog1.Execute then
     begin
       exportxlsfile := SaveDialog1.FileName;
+      SQLQuery1.First;
+      {
+      Exp := TFPSExport.Create(nil);
+      ExpSettings := TFPSExportFormatSettings.Create(True);
+      try
+        ExpSettings.ExportFormat := efXLSX; // efXLS efODS efXLSX choose file format
+        ExpSettings.HeaderRow := True; // include header row with field names
+        Exp.FormatSettings := ExpSettings; // apply settings to export object
+        Exp.Dataset := SQLQuery1; // specify source
+        Exp.FileName := exportxlsfile;
+        Exp.Execute; // run the export
+      finally
+        Exp.Free;
+        ExpSettings.Free;
+      end;
+      }
+      ms := nil;
       ExpWorkbook := TsWorkbook.Create;
       ExpWorksheet := ExpWorkbook.AddWorksheet('export');
       ExpWorkbook.Options := [boFileStream];
@@ -397,27 +425,32 @@ begin
       for i := 0 to SQLQuery1.FieldCount - 1 do
       begin
         ExpWorksheet.WriteCellValueAsString(0, i,
-          SQLQuery1.Fields[i].FieldName);
+          SQLQuery1.Fields[i].FieldName + ' (' +
+          Fieldtypenames[SQLQuery1.Fields.Fields[i].DataType] + ')');
       end;
-      SQLQuery1.First;
       // Перебираем строки БД для вывода строк
-      for j := 1 to SQLQuery1.RecordCount do
+      for j := 0 to SQLQuery1.RecordCount - 1 do
       begin
         for i := 0 to SQLQuery1.FieldCount - 1 do
         begin
+          // Определяем тип поля
           ftype := SQLQuery1.Fields[i].DataType;
           if ftype = ftBlob then
+            // Если тип поля BLOB
           begin
+            // Проверяем есть ли изображение в ячейке
             if not SQLQuery1.FieldByName('photo').IsNull then
             begin
-              ms := nil;
-              JPEGImage := nil;
-              ms := SQLQuery1.CreateBlobStream(SQLQuery1.FieldByName('photo'), bmRead);
-              ms.Position := 0;
               try
-                //                JPEGImage.LoadFromStream(ms);
-                //                JPEGImage.SaveToFile(tmpjpgfile);
-                ExpWorksheet.WriteImage(j, i, tmpjpgfile);
+                JPEGImage := TJPEGImage.Create;
+                ms := SQLQuery1.CreateBlobStream(SQLQuery1.FieldByName('photo'), bmRead);
+                ms.Position := 0;
+                JPEGImage.LoadFromStream(ms);
+                tmpjpgfile := CurDir + IntToStr(j) + '.jpg';
+                // Сохраняем изображение во временный файл
+                JPEGImage.SaveToFile(tmpjpgfile);
+                // Загружаем из временного файла изображение в таблицу
+                //                ExpWorksheet.WriteImage(j + 1, i, tmpjpgfile);
               finally
                 JPEGImage.Free;
                 ms.Free;
@@ -427,12 +460,13 @@ begin
             end;
           end
           else
-            ExpWorksheet.WriteCellValueAsString(j, i, SQLQuery1.Fields[i].AsString);
+            // Если тип поля НЕ BLOB
+            ExpWorksheet.WriteCellValueAsString(j + 1, i, SQLQuery1.Fields[i].AsString);
         end;
         SQLQuery1.Next;
       end;
       // Записываем все в файл
-      ExpWorkbook.WriteToFile(exportxlsfile);
+      ExpWorkbook.WriteToFile(exportxlsfile, OUTPUT_FORMAT);
       ExpWorkbook.Free;
     end;
     ShowMessage('Файл ' + exportxlsfile + ' сохранен.');

@@ -233,4 +233,20 @@ object fMain: TfMain
     left = 88
     top = 504
   end
+  object FPSExport1: TFPSExport
+    ExportFields = <>
+    FormatSettings.IntegerFormat = '%d'
+    FormatSettings.DecimalSeparator = ','
+    FormatSettings.CurrencySymbol = '₴'
+    FormatSettings.CurrencyDigits = 0
+    FormatSettings.BooleanTrue = 'True'
+    FormatSettings.BooleanFalse = 'False'
+    FormatSettings.DateFormat = 'dd.MM.yyyy'
+    FormatSettings.TimeFormat = 'hh:nn'
+    FormatSettings.DateTimeFormat = 'dd.MM.yyyy hh:nn'
+    FormatSettings.ExportFormat = efXLS
+    FormatSettings.SheetName = 'Sheet'
+    left = 720
+    top = 64
+  end
 end
